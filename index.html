@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cstimer-csv</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+</head>
+<body>
+  <div id="app">
+    <section class="section">
+      <div class="container">
+        <div class="field">
+          <div class="control">
+            <textarea class="textarea" v-model="recordsText"></textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="control">
+            <button class="button" @click="downloadCsv">Download ({{ csvFilename }})</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    window.onload = function () {
+      vueApp = new Vue({
+        el: '#app',
+        data: function () {
+          return {
+            recordsText: '',
+          }
+        },
+        computed: {
+          records: function() {
+            return JSON.parse(this.recordsText || '{}');
+          },
+          recordsCsv: function () {
+            if (!this.records) return '';
+
+            let csv = '';
+
+            Object.keys(this.records).forEach((key, index) => {
+              if (key !== 'properties') {
+                const records = this.records[key];
+                records.forEach((record) => {
+                  const laps = record[0];
+                  const scramble = record[1];
+                  const unixtime = record[3];
+                  const datetime = new Date(unixtime * 1000);
+                  csv += `${key},${datetime.toLocaleString('ja-JP')},${Math.max(...laps) / 1000},${scramble}` + '\n';
+                });
+              }
+            });
+
+            return csv;
+          },
+          csvFilename: function() {
+            const date = new Date();
+            const filename = date.getFullYear() + ('0' + (date.getMonth() + 1)).slice(-2) + ('0' + date.getDate()).slice(-2) + '.csv';
+            return filename;
+          }
+        },
+        methods: {
+          downloadCsv: function() {
+            const blob = new Blob([this.recordsCsv], { type: 'text/csv' });
+            const url = (window.URL || window.webkitURL).createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = this.csvFilename;
+            a.click();
+            (window.URL || window.webkitURL).revokeObjectURL(url);
+          }
+        }
+      })
+    };
+  </script>
+</body>
+</html>
